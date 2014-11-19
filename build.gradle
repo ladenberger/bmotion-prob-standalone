@@ -87,7 +87,7 @@ task download_target_all << {
 
 targets.each() { target ->
     task "zip_$target"(type: Zip) {
-        archiveName = 'bmotion-prob-'+bmotionVersion+'-'+target+'.zip'
+        archiveName = bmotionVersion+'/bmotion-prob-'+bmotionVersion+'-'+target+'.zip'
         def clifile = 'cli/'+target+'_cli'
         from ('build/install/bmotion-prob')
         from (clifile)
