@@ -1,0 +1,111 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.6
+version = '1.0'
+
+repositories {
+    maven {
+        name "cobra"
+        url "http://cobra.cs.uni-duesseldorf.de/artifactory/repo"
+    }
+}
+
+configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
+
+bmotionVersion = '1.0'
+mainClassName = "de.bms.prob.Main"
+
+dependencies {
+    compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
+}
+
+def targets = ["linux32","linux64","leopard64","win32"]
+
+def download(address,target) {
+    def file = new FileOutputStream(target)
+    def out = new BufferedOutputStream(file)
+    out << new URL(address).openStream()
+    out.close()
+}
+
+def download_cspm(target) {
+
+    def downloadFile = target
+    def postfix = ""
+    if(target == "win32") {
+        downloadFile = "windows"
+        postfix = ".exe"
+    }
+
+    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-"+downloadFile
+    print "Downloading cspm for "+target+" ..."
+    def dir = "./cli/"+target+"_cli/cli/lib/cspmf"+postfix
+    download(nwurl,dir)
+    new File(dir).setExecutable(true)
+    println " done."
+
+}
+
+def download_cli(target) {
+
+    def downloadFile = target
+
+    def dir = "./cli/"+target+"_cli/cli"
+    def d = new File(dir)
+    delete file(d)
+    d.mkdirs();
+
+    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cli/probcli_"+downloadFile+".zip"
+    print "Downloading cli for "+target+" ..."
+    def targetzip = dir+"probcli.zip"
+    download(nwurl,targetzip)
+    println " done."
+    FileTree zip = zipTree(targetzip)
+    println "Unzipping "+zip
+    copy {
+        from zip
+        into dir
+    }
+    delete file(targetzip)
+
+}
+
+task download_target << {
+    def target = System.getProperty("target")?.toLowerCase()
+    download_cli(target);
+    download_cspm(target);
+}
+
+task download_target_all << {
+    print "Download targets ..."
+    targets.each { target ->
+        download_cli(target);
+        download_cspm(target);
+    }
+}
+
+targets.each() { target ->
+    task "zip_$target"(type: Zip) {
+        archiveName = 'bmotion-prob-'+bmotionVersion+'-'+target+'.zip'
+        def clifile = 'cli/'+target+'_cli'
+        from ('build/install/bmotion-prob')
+        from (clifile)
+        from('resources')
+    }
+}
+
+task cleanAll << {
+    delete("build")
+    delete("cli")
+}
+
+// Very ugly ... Someone knows a better way???
+startScripts {
+    doLast {
+        unixScript.text = unixScript.text.replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" de.bms.prob.Main "$@"', 'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ de.bms.prob.Main -workspace ${APP_HOME}/workspace/ "$@"')
+        windowsScript.text = windowsScript.text.replace('"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" de.bms.prob.Main %CMD_LINE_ARGS%','"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ de.bms.prob.Main -workspace %APP_HOME%/workspace/')
+    }
+}
+
+task buildAll(dependsOn: [cleanAll,installApp,download_target_all,tasks.withType( Zip ).matching { task -> task.name.startsWith( 'zip_' ) }]) << {}
