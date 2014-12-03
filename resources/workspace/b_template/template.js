@@ -5,4 +5,5 @@ require.config({
 });
 define(["require","prob"], function(require) {
     var bms = require('bmotion')
+    // Put here your code
 });
