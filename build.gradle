@@ -13,7 +13,7 @@ repositories {
 
 configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
 
-bmotionVersion = '1.3-SNAPSHOT'
+bmotionVersion = '0.1.0-SNAPSHOT'
 mainClassName = "de.bms.prob.Main"
 
 dependencies {
