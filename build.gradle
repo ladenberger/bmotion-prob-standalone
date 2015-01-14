@@ -13,7 +13,7 @@ repositories {
 
 configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
 
-bmotionVersion = '0.1.0-SNAPSHOT'
+bmotionVersion = '0.1.1-SNAPSHOT'
 mainClassName = "de.bms.prob.Main"
 
 dependencies {
@@ -103,8 +103,9 @@ task cleanAll << {
 // Very ugly ... Someone knows a better way???
 startScripts {
     doLast {
-        unixScript.text = unixScript.text.replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" de.bms.prob.Main "$@"', 'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ de.bms.prob.Main -workspace ${APP_HOME}/workspace/ -standalone "$@"')
-        windowsScript.text = windowsScript.text.replace('"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" de.bms.prob.Main %CMD_LINE_ARGS%','"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ de.bms.prob.Main -workspace %APP_HOME%/workspace/ -standalone')
+	def visualisationParameter = project.hasProperty('visualisation') ? "-visualisation " + visualisation : ""
+        unixScript.text = unixScript.text.replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" de.bms.prob.Main "$@"', 'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ de.bms.prob.Main -workspace ${APP_HOME}/workspace/ -standalone '+visualisationParameter+' "$@"')
+        windowsScript.text = windowsScript.text.replace('"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" de.bms.prob.Main %CMD_LINE_ARGS%','"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ de.bms.prob.Main -workspace %APP_HOME%/workspace/ -standalone ' + visualisationParameter)
     }
 }
 
