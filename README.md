@@ -18,9 +18,9 @@ The gradle script will produce a zipped standalone version for all platforms. Th
 
 # Building the binary with predefined visualisation
 
-(1) Put your visualisation into the folder "resources".
+(1) Put your visualisation into the folder "resources/workspace".
 
-(2) Run the following command, where XXX is the path of the html template file in the resources folder (e.g. myvis/vis.html):
+(2) Run the following command, where XXX is the path to the html template file in the resources folder (e.g. myvis/vis.html):
 
 ```
 gradle -Pvisualisation="myvis/vis.html" buildAll
