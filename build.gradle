@@ -56,7 +56,8 @@ def download_cli(target) {
     delete file(d)
     d.mkdirs();
 
-    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/tmp/milestone-22/probcli_"+downloadFile+".zip"
+    //def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/tmp/milestone-22/probcli_"+downloadFile+".zip"
+    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cli/probcli_"+downloadFile+".zip"
     print "Downloading cli for "+target+" ..."
     def targetzip = dir+"probcli.zip"
     download(nwurl,targetzip)
