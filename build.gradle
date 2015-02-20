@@ -13,16 +13,17 @@ repositories {
 
 configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
 
-bmotionVersion = '0.1.1-SNAPSHOT'
+bmotionVersion = '0.1.1'
+probVersion = 'milestone-23'
 mainClassName = "de.bms.prob.Main"
 
 dependencies {
     compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
 }
 
-def targets = ["linux32","linux64","leopard64","win32"]
+def targets = ["linux32", "linux64", "leopard64", "win32"]
 
-def download(address,target) {
+def download(address, target) {
     def file = new FileOutputStream(target)
     def out = new BufferedOutputStream(file)
     out << new URL(address).openStream()
@@ -33,15 +34,15 @@ def download_cspm(target) {
 
     def downloadFile = target
     def postfix = ""
-    if(target == "win32") {
+    if (target == "win32") {
         downloadFile = "windows"
         postfix = ".exe"
     }
 
-    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-"+downloadFile
-    print "Downloading cspm for "+target+" ..."
-    def dir = "./cli/"+target+"_cli/cli/lib/cspmf"+postfix
-    download(nwurl,dir)
+    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-" + downloadFile
+    print "Downloading cspm for " + target + " ..."
+    def dir = "./cli/" + target + "_cli/cli/lib/cspmf" + postfix
+    download(nwurl, dir)
     new File(dir).setExecutable(true)
     println " done."
 
@@ -51,19 +52,19 @@ def download_cli(target) {
 
     def downloadFile = target
 
-    def dir = "./cli/"+target+"_cli/cli"
+    def dir = "./cli/" + target + "_cli/cli"
     def d = new File(dir)
     delete file(d)
     d.mkdirs();
 
-    //def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/tmp/milestone-22/probcli_"+downloadFile+".zip"
-    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cli/probcli_"+downloadFile+".zip"
-    print "Downloading cli for "+target+" ..."
-    def targetzip = dir+"probcli.zip"
-    download(nwurl,targetzip)
+    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/tmp/" + probVersion + "/probcli_" + downloadFile + ".zip"
+    //def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cli/probcli_"+downloadFile+".zip"
+    print "Downloading cli for " + target + " ..."
+    def targetzip = dir + "probcli.zip"
+    download(nwurl, targetzip)
     println " done."
     FileTree zip = zipTree(targetzip)
-    println "Unzipping "+zip
+    println "Unzipping " + zip
     copy {
         from zip
         into dir
@@ -88,10 +89,10 @@ task download_target_all << {
 
 targets.each() { target ->
     task "zip_$target"(type: Zip) {
-        archiveName = bmotionVersion+'/bmotion-prob-'+bmotionVersion+'-'+target+'.zip'
-        def clifile = 'cli/'+target+'_cli'
-        from ('build/install/bmotion-prob')
-        from (clifile)
+        archiveName = bmotionVersion + '/bmotion-prob-' + bmotionVersion + '-' + target + '.zip'
+        def clifile = 'cli/' + target + '_cli'
+        from('build/install/bmotion-prob')
+        from(clifile)
         from('resources')
     }
 }
@@ -104,10 +105,15 @@ task cleanAll << {
 // Very ugly ... Someone knows a better way???
 startScripts {
     doLast {
-	def visualisationParameter = project.hasProperty('visualisation') ? "-visualisation " + visualisation : ""
-        unixScript.text = unixScript.text.replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" de.bms.prob.Main "$@"', 'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ de.bms.prob.Main -workspace ${APP_HOME}/workspace/ -standalone -local '+visualisationParameter+' "$@"')
-        windowsScript.text = windowsScript.text.replace('"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" de.bms.prob.Main %CMD_LINE_ARGS%','"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ de.bms.prob.Main -workspace %APP_HOME%/workspace/ -standalone -local ' + visualisationParameter)
+        def visualisationParameter = project.hasProperty('visualisation') ? "-visualisation " + visualisation : ""
+        unixScript.text = unixScript.text.
+                replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" de.bms.prob.Main "$@"',
+                        'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ de.bms.prob.Main -workspace ${APP_HOME}/workspace/ -standalone -local ' + visualisationParameter + ' "$@"')
+        windowsScript.text = windowsScript.text.replace(
+                '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" de.bms.prob.Main %CMD_LINE_ARGS%',
+                '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ de.bms.prob.Main -workspace %APP_HOME%/workspace/ -standalone -local ' + visualisationParameter)
     }
 }
 
-task buildAll(dependsOn: [cleanAll,installApp,download_target_all,tasks.withType( Zip ).matching { task -> task.name.startsWith( 'zip_' ) }]) << {}
+task buildAll(dependsOn: [cleanAll, installApp, download_target_all, tasks.withType(Zip).
+        matching { task -> task.name.startsWith('zip_') }]) << {}
