@@ -1,1 +1,3 @@
-rootProject.name = "bmotion-prob"
+include 'online'
+include 'standalone'
+//rootProject.name = 'bmotion-prob'

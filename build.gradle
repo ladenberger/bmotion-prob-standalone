@@ -1,67 +1,63 @@
-apply plugin: 'java'
-apply plugin: 'application'
+def HOME = System.properties['user.home']
+def NODE_VERSION = '0.12.0'
+def NVM_BIN = "${HOME}/.nvm/versions/node/v${NODE_VERSION}/bin"
 
-sourceCompatibility = 1.6
-version = '1.0'
+def bmotionVersion = '0.2.0-SNAPSHOT'
+def probVersion = 'milestone-25'
 
-repositories {
-    maven {
-        name "cobra"
-        url "http://cobra.cs.uni-duesseldorf.de/artifactory/repo"
-    }
-}
+def targets = ["linux32", "linux64", "osx64", "win32"]
+def serverTargetMapping = ["linux32": "linux32", "linux64": "linux64", "osx64": "leopard64", "win32": "win32"]
 
-configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
-
-bmotionVersion = '0.1.3-SNAPSHOT'
-probVersion = 'milestone-23'
-mainClassName = "de.bms.prob.Main"
-
-dependencies {
-    compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
-}
-
-def targets = ["linux32", "linux64", "leopard64", "win32"]
-
-def download(address, target) {
+def download(String address, String target) {
     def file = new FileOutputStream(target)
     def out = new BufferedOutputStream(file)
     out << new URL(address).openStream()
     out.close()
 }
 
-def download_cspm(target) {
+// ----------------------------------------
+// Helper methods ...
+// ----------------------------------------
+def downloadClientData(String mode) {
+    println "Downloading " + mode + " client data..."
+    // Prepare folders ...
+    def cssDir = new File('client/' + mode + '/css')
+    def jsDir = new File('client/' + mode + '/js')
+    if (!cssDir.exists()) cssDir.mkdirs()
+    if (!jsDir.exists()) jsDir.mkdirs()
+    // Download current data
+    def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/bmotion/bmotion-prob-frontend"
+    download(url + '/bmotion.' + mode + '.js', 'client/' + mode + '/js/bmotion.' + mode + '.js')
+    download(url + '/css/bmotion.css', 'client/' + mode + '/css/bmotion.css')
+    println " done."
+}
 
-    def downloadFile = target
-    def postfix = ""
+def download_cspm(String target) {
+    def String downloadFile = target
+    def String postfix = ""
     if (target == "win32") {
         downloadFile = "windows"
         postfix = ".exe"
     }
-
-    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-" + downloadFile
-    print "Downloading cspm for " + target + " ..."
-    def dir = "./cli/" + target + "_cli/cli/lib/cspmf" + postfix
-    download(nwurl, dir)
+    def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-" + downloadFile
+    println "Downloading cspm for " + target + " ..."
+    def String dir = "cli/" + target + "_cli/cli/lib/cspmf" + postfix
+    download(url, dir)
     new File(dir).setExecutable(true)
     println " done."
-
 }
 
-def download_cli(target) {
-
+def download_cli(target, probVersion) {
     def downloadFile = target
-
-    def dir = "./cli/" + target + "_cli/cli"
+    def String dir = "cli/" + target + "_cli/cli"
     def d = new File(dir)
     delete file(d)
     d.mkdirs();
-
-    def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/tmp/" + probVersion + "/probcli_" + downloadFile + ".zip"
+    def url = "http://nightly.cobra.cs.uni-duesseldorf.de/tmp/" + probVersion + "/probcli_" + downloadFile + ".zip"
     //def nwurl = "http://nightly.cobra.cs.uni-duesseldorf.de/cli/probcli_"+downloadFile+".zip"
-    print "Downloading cli for " + target + " ..."
-    def targetzip = dir + "probcli.zip"
-    download(nwurl, targetzip)
+    println "Downloading cli for " + target + " ..."
+    def String targetzip = dir + "probcli.zip"
+    download(url, targetzip)
     println " done."
     FileTree zip = zipTree(targetzip)
     println "Unzipping " + zip
@@ -70,50 +66,143 @@ def download_cli(target) {
         into dir
     }
     delete file(targetzip)
-
 }
 
-task download_target << {
-    def target = System.getProperty("target")?.toLowerCase()
-    download_cli(target);
-    download_cspm(target);
-}
+allprojects {
 
-task download_target_all << {
-    print "Download targets ..."
-    targets.each { target ->
-        download_cli(target);
-        download_cspm(target);
+    apply plugin: 'java'
+    apply plugin: 'application'
+
+    sourceCompatibility = 1.6
+
+    repositories {
+        maven {
+            name "cobra"
+            url "http://cobra.cs.uni-duesseldorf.de/artifactory/repo"
+        }
     }
-}
 
-targets.each() { target ->
-    task "zip_$target"(type: Zip) {
-        archiveName = bmotionVersion + '/bmotion-prob-' + bmotionVersion + '-' + target + '.zip'
-        def clifile = 'cli/' + target + '_cli'
-        from('build/install/bmotion-prob')
-        from(clifile)
-        from('resources')
+    configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
+
+    dependencies {
+        compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
     }
-}
 
-task cleanAll << {
-    delete("build")
-    delete("cli")
-}
-
-// Very ugly ... Someone knows a better way???
-startScripts {
-    doLast {
-        def visualisationParameter = project.hasProperty('visualisation') ? "-visualisation " + visualisation : ""
-        unixScript.text = unixScript.text.
-                replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" de.bms.prob.Main "$@"',
-                        'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ de.bms.prob.Main -workspace ${APP_HOME}/workspace/ -standalone -local ' + visualisationParameter + ' "$@"')
-        windowsScript.text = windowsScript.text.replace(
-                '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" de.bms.prob.Main %CMD_LINE_ARGS%',
-                '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ de.bms.prob.Main -workspace %APP_HOME%/workspace/ -standalone -local ' + visualisationParameter)
+    // Extend clean task ...
+    clean {
+        delete("client/online/js")
+        delete("client/online/css")
+        delete("client/standalone/js")
+        delete("client/standalone/css")
+        delete("cli")
+        delete("online/build")
+        delete("standalone/build")
+        delete("standalone/node_modules")
     }
+
+    serverTargetMapping.each() { k, v ->
+        task "downloadCli_${k}" << {
+            download_cli(v, probVersion);
+            download_cspm(v);
+        }
+    }
+
 }
 
-task buildAll(dependsOn: [cleanAll, installApp, download_target_all, tasks.withType(Zip).
-        matching { task -> task.name.startsWith('zip_') }]) << {}
+// ----------------------------------------
+// Build online version
+// ----------------------------------------
+project(':online') {
+
+    mainClassName = "de.bms.prob.Online"
+    buildDir = new File(rootProject.projectDir, "online/build")
+
+    serverTargetMapping.each() { k, v ->
+        task "zip_${k}"(dependsOn: ["downloadCli_${k}", installApp], type: Zip) {
+            destinationDir = new File('online/build/distribution/' + bmotionVersion)
+            archiveName = 'bmotion-prob-online-' + bmotionVersion + '-' + k + '.zip'
+            def clifile = 'build/server/cli/' + v + '_cli'
+            from('build/install/online')
+            from(clifile)
+            from('../client/online') {
+                into "workspace"
+            }
+        }
+    }
+
+
+    task onlineDist(dependsOn: [tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
+    }
+
+    // Very ugly ... Someone knows a better way???
+    startScripts {
+        doLast {
+            unixScript.text = unixScript.text.
+                    replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" ' + mainClassName + ' "$@"',
+                            'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ ' + mainClassName + ' -workspace ${APP_HOME}/workspace/ "$@"')
+            windowsScript.text = windowsScript.text.replace(
+                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" ' + mainClassName + ' %CMD_LINE_ARGS%',
+                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ ' + mainClassName + ' -workspace %APP_HOME%/workspace/')
+        }
+    }
+
+}
+
+// ----------------------------------------
+// Build full distribution for all platforms (client and server)
+// ----------------------------------------
+project(':standalone') {
+
+    mainClassName = "de.bms.prob.Standalone"
+    buildDir = new File(rootProject.projectDir, "standalone/build")
+
+    task npmDeps(type: Exec) {
+        //commandLine "${NVM_BIN}/npm", 'install', '--save-dev', 'gulp', 'gulp-util', 'node-webkit-builder'
+        commandLine "${NVM_BIN}/npm", 'install', '--save-dev', 'node-webkit-builder'
+    }
+
+    task downloadClientStandaloneData << {
+        downloadClientData('standalone')
+    }
+
+    targets.each() { target ->
+        task "buildClient_${target}"(dependsOn: [downloadClientStandaloneData, npmDeps], type: Exec) {
+            //commandLine "${NVM_BIN}/gulp", 'nw'
+            commandLine "${NVM_BIN}/nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', target, '../client/standalone'
+        }
+    }
+
+    serverTargetMapping.each() { k, v ->
+        task "zip_${k}"(dependsOn: ["downloadCli_${k}", installApp], type: Zip) {
+            destinationDir = new File('standalone/build/distribution/' + bmotionVersion)
+            archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
+            def clifile = '../cli/' + v + '_cli'
+            from('build/install/standalone') {
+                into "server"
+            }
+            from(clifile) {
+                into "server"
+            }
+            from('build/client/bmotion-prob/' + k) {
+                into "client"
+            }
+        }
+    }
+
+    task standaloneDist(dependsOn: [tasks.withType(Exec).matching { task -> task.name.startsWith('buildClient_') }, tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
+    }
+
+    // Very ugly ... Someone knows a better way???
+    startScripts {
+        doLast {
+            unixScript.text = unixScript.text.
+                    replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" ' + mainClassName + ' "$@"',
+                            'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ ' + mainClassName + ' -standalone -local "$@"')
+            windowsScript.text = windowsScript.text.replace(
+                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" ' + mainClassName + ' %CMD_LINE_ARGS%',
+                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ ' + mainClassName + ' -standalone -local')
+        }
+    }
+
+}
+
