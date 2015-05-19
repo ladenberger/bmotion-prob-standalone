@@ -95,8 +95,8 @@ allprojects {
         delete("client/standalone/js")
         delete("client/standalone/css")
         delete("cli")
-        delete("online/build")
-        delete("standalone/build")
+        delete("online")
+        delete("standalone")
         delete("standalone/node_modules")
     }
 
@@ -105,6 +105,13 @@ allprojects {
             download_cli(v, probVersion);
             download_cspm(v);
         }
+    }
+
+    task prepare {
+        def online = new File('online')
+        def standalone = new File('standalone')
+        if (!online.exists()) online.mkdirs()
+        if (!standalone.exists()) standalone.mkdirs()
     }
 
 }
