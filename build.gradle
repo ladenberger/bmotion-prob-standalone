@@ -164,7 +164,7 @@ project(':standalone') {
 
     task npmDeps(dependsOn: [prepare], type: Exec) {
         //commandLine "${NVM_BIN}/npm", 'install', '--save-dev', 'gulp', 'gulp-util', 'node-webkit-builder'
-        commandLine "${NVM_BIN}/npm", 'install', '--save-dev', 'node-webkit-builder'
+        commandLine "${NVM_BIN}/npm", 'install', '-g', 'node-webkit-builder'
     }
 
     targets.each() { target ->
