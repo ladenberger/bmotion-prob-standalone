@@ -4,7 +4,7 @@
   "main": "index.html",
   "window": {
     "icon": "bmsicon.png",
-    "toolbar": true,
+    "toolbar": false,
     "width": 1200,
     "height": 800,
     "min_width": 800,
