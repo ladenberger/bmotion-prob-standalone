@@ -1,7 +1,3 @@
-def HOME = System.properties['user.home']
-def NODE_VERSION = '0.12.0'
-def NVM_BIN = "${HOME}/.nvm/versions/node/v${NODE_VERSION}/bin"
-
 def bmotionVersion = '0.2.0-SNAPSHOT'
 def probVersion = 'milestone-25'
 
@@ -163,14 +159,12 @@ project(':standalone') {
     }
 
     task npmDeps(dependsOn: [prepare], type: Exec) {
-        //commandLine "${NVM_BIN}/npm", 'install', '--save-dev', 'gulp', 'gulp-util', 'node-webkit-builder'
-        commandLine "${NVM_BIN}/npm", 'install', '-g', 'node-webkit-builder'
+        commandLine "npm", 'install', '-g', 'node-webkit-builder'
     }
 
     targets.each() { target ->
         task "buildClient_${target}"(dependsOn: [downloadClientData, npmDeps], type: Exec) {
-            //commandLine "${NVM_BIN}/gulp", 'nw'
-            commandLine "${NVM_BIN}/nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', target, 'build/resources/client'
+            commandLine "nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', target, 'build/resources/client'
         }
     }
 
