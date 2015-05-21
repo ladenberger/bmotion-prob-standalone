@@ -33,4 +33,4 @@ to build the standalone version or
 
 to build the online version.
 
-This should build binaries without a gradle installation on your computer.
+This should build the binaries without a gradle installation on your computer.
