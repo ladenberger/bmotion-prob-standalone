@@ -8,29 +8,13 @@
 
 <script data-main="app" src="require.js"></script>
 
-<div ng-controller="bmsTabsCtrl" class="bmsTabs">
+<div ng-controller="bmsVisualizationCtrl" class="visualizationContainer">
 
-    <tabset class="tabset">
-        <tab ng-repeat="workspace in workspaces"
-             heading="{{workspace.name}}"
-             select="selectWorkspace(workspace.id)"
-             active=workspace.active class="tab">
-            <div ng-controller="bmsTabsChildCtrl"
-                 ng-init="workspace=workspace" class="bmsTabContent">
-                <div data-bms-visualisation-view="{{workspace.template}}" data-bms-id="{{workspace.id}}"></div>
-            </div>
-        </tab>
-        <tab select="addWorkspace()">
-            <tab-heading>
-                <i class="icon-plus-sign">+</i>
-            </tab-heading>
-            <div class="tabOpenContainer">
-                <div class="tabOpenContent" data-bms-drop-zone ng-click="openFileDialog()">
-                    <p>Drop file here or click to open</p>
-                </div>
-            </div>
-        </tab>
-    </tabset>
+    <div ng-show="visualization" class="visualizationZone" data-bms-visualisation-view="{{visualization.template}}" data-bms-id="{{visualization.id}}"></div>
+
+    <div ng-hide="visualization" class="dropZone" data-bms-drop-zone ng-click="openFileDialog()">
+        <p>Drop file here or click to open</p>
+    </div>
 
 </div>
 

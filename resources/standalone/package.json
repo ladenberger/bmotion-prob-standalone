@@ -2,6 +2,7 @@
   "version": "0.2.0",
   "name": "bmotion-prob",
   "main": "index.html",
+  "single-instance": false,
   "window": {
     "icon": "bmsicon.png",
     "toolbar": true,
