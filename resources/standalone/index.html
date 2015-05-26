@@ -10,7 +10,8 @@
 
 <div ng-controller="bmsVisualizationCtrl" class="visualizationContainer">
 
-    <div ng-show="visualization" class="visualizationZone" data-bms-visualisation-view="{{visualization.template}}" data-bms-id="{{visualization.id}}"></div>
+    <div ng-show="visualization" class="visualizationZone" data-bms-visualisation-view="{{visualization.template}}"
+         data-bms-id="{{visualization.id}}"></div>
 
     <div ng-hide="visualization" class="dropZone" data-bms-drop-zone ng-click="openFileDialog()">
         <p>Drop file here or click to open</p>
@@ -73,27 +74,27 @@
 </div>
 
 <div bms-dialog type="CurrentTrace" title="History">
-    <prob-view/>
+    <div prob-view></div>
 </div>
 
 <div bms-dialog type="Events" title="Events">
-    <prob-view/>
+    <div prob-view></div>
 </div>
 
 <div bms-dialog type="StateInspector" title="State">
-    <prob-view/>
+    <div prob-view></div>
 </div>
 
 <div bms-dialog type="CurrentAnimations" title="Animations">
-    <prob-view/>
+    <div prob-view></div>
 </div>
 
 <div bms-dialog type="GroovyConsoleSession" title="Console">
-    <prob-view/>
+    <div prob-view></div>
 </div>
 
 <div bms-dialog type="ModelCheckingUI" title="ModelChecking">
-    <prob-view/>
+    <div prob-view></div>
 </div>
 
 <div bms-dialog type="ElementProjection" title="Element Projection Diagram">
