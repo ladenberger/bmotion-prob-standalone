@@ -24,7 +24,7 @@ def downloadClientData(String mode) {
     // Download current data
     def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/bmotion/bmotion-prob-frontend"
     download(url + '/bmotion.' + mode + '.js', mode + '/build/resources/client/js/bmotion.' + mode + '.js')
-    download(url + '/css/bmotion.css', mode + '/build/resources/client/css/bmotion.css')
+    download(url + '/main/css/bmotion.css', mode + '/build/resources/client/css/bmotion.css')
     println " done."
 }
 
