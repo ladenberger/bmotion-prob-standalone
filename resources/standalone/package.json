@@ -1,11 +1,11 @@
 {
   "version": "0.2.0",
   "name": "bmotion-prob",
-  "main": "index.html",
+  "main": "index.html#/loading",
   "single-instance": false,
   "window": {
     "icon": "bmsicon.png",
-    "toolbar": true,
+    "toolbar": false,
     "width": 1200,
     "height": 800,
     "min_width": 800,
