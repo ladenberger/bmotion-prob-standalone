@@ -14,21 +14,21 @@ def download(String address, String target) {
 // ----------------------------------------
 // Helper methods ...
 // ----------------------------------------
-def downloadClientData(String mode) {
-    println "Downloading " + mode + " client data..."
+def downloadClientData() {
+    println "Downloading Standalone client data..."
     // Prepare folders ...
-    def cssDir = new File(mode + '/build/resources/client/css')
-    def jsDir = new File(mode + '/build/resources/client/js')
+    def cssDir = new File('build/resources/client/css')
+    def jsDir = new File('build/resources/client/js')
     if (!cssDir.exists()) cssDir.mkdirs()
     if (!jsDir.exists()) jsDir.mkdirs()
     // Download current data
     def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/bmotion/bmotion-prob-frontend"
-    download(url + '/js/bmotion.' + mode + '.js', mode + '/build/resources/client/js/bmotion.' + mode + '.js')
-    download(url + '/css/bmotion.min.css', mode + '/build/resources/client/css/bmotion.min.css')
+    download(url + '/js/bmotion.standalone.js', 'build/resources/client/js/bmotion.standalone.js')
+    download(url + '/css/bmotion.min.css', 'build/resources/client/css/bmotion.min.css')
     println " done."
 }
 
-def download_cspm(String target, String mode) {
+def download_cspm(String target) {
     def String downloadFile = target
     def String postfix = ""
     if (target == "win32") {
@@ -37,15 +37,15 @@ def download_cspm(String target, String mode) {
     }
     def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-" + downloadFile
     println "Downloading cspm for " + target + " ..."
-    def String dir = mode + "/build/cli/" + target + "_cli/cli/lib/cspmf" + postfix
+    def String dir = "build/cli/" + target + "_cli/cli/lib/cspmf" + postfix
     download(url, dir)
     new File(dir).setExecutable(true)
     println " done."
 }
 
-def download_cli(target, probVersion, String mode) {
+def download_cli(target, probVersion) {
     def downloadFile = target
-    def String dir = mode + "/build/cli/" + target + "_cli/cli"
+    def String dir = "build/cli/" + target + "_cli/cli"
     def d = new File(dir)
     delete file(d)
     d.mkdirs();
@@ -64,140 +64,100 @@ def download_cli(target, probVersion, String mode) {
     delete file(targetzip)
 }
 
-allprojects {
 
-    apply plugin: 'java'
-    apply plugin: 'application'
+apply plugin: 'java'
+apply plugin: 'maven'
 
-    sourceCompatibility = 1.6
+sourceCompatibility = 1.6
 
-    repositories {
-        maven {
-            name "cobra"
-            url "http://cobra.cs.uni-duesseldorf.de/artifactory/repo"
-        }
+repositories {
+    maven {
+        name "cobra"
+        url "http://cobra.cs.uni-duesseldorf.de/artifactory/repo"
     }
-
-    configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
-
-    dependencies {
-        compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
-    }
-
-    // Extend clean task ...
-    clean {
-        delete("cli")
-        delete("online")
-        delete("standalone")
-    }
-
-    serverTargetMapping.each() { k, v ->
-        task "downloadCli_${k}" << {
-            download_cli(v, probVersion, project.name)
-            download_cspm(v, project.name)
-        }
-    }
-
-    task copyClientData(type: Copy) {
-        from '../resources/' + project.name
-        into 'build/resources/client'
-    }
-
-    task downloadClientData(dependsOn: [copyClientData]) << {
-        downloadClientData(project.name)
-    }
-
 }
 
-// ----------------------------------------
-// Build online version
-// ----------------------------------------
-project(':online') {
+sourceSets.main.java.srcDir 'src/main/java' // ie include the 'java' dir as groovy source
 
-    mainClassName = "de.bms.prob.Online"
-    buildDir = new File(rootProject.projectDir, "online/build")
+configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
 
-    serverTargetMapping.each() { k, v ->
-        task "zip_${k}"(dependsOn: [downloadClientData, "downloadCli_${k}", installApp], type: Zip) {
-            destinationDir = new File('online/build/distribution/' + bmotionVersion)
-            archiveName = 'bmotion-prob-online-' + bmotionVersion + '-' + k + '.zip'
-            from('build/install/online')
-            from('build/cli/' + v + '_cli')
-            from('build/resources/client') {
-                into "workspace"
-            }
-        }
+dependencies {
+    compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'BMotion Studio for ProB Start',
+                'Implementation-Version': bmotionVersion,
+                'Main-Class': 'Start'
     }
+}
 
-    task onlineDist(dependsOn: [tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {}
+// Extend clean task ...
+clean {
+    delete("cli")
+    delete("build")
+}
 
-    // Very ugly ... Someone knows a better way???
-    startScripts {
-        doLast {
-            unixScript.text = unixScript.text.
-                    replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" ' + mainClassName + ' "$@"',
-                            'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ ' + mainClassName + ' -workspace ${APP_HOME}/workspace/ "$@"')
-            windowsScript.text = windowsScript.text.replace(
-                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" ' + mainClassName + ' %CMD_LINE_ARGS%',
-                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ ' + mainClassName + ' -workspace %APP_HOME%/workspace/')
-        }
+serverTargetMapping.each() { k, v ->
+    task "downloadCli_${k}" << {
+        download_cli(v, probVersion)
+        download_cspm(v)
     }
+}
 
+task copyClientData(type: Copy) {
+    from 'resources/standalone'
+    into 'build/resources/client'
+}
+
+task downloadClientData(dependsOn: copyClientData) << {
+    downloadClientData()
 }
 
 // ----------------------------------------
 // Build full distribution for all platforms (client and server)
 // ----------------------------------------
-project(':standalone') {
 
-    mainClassName = "de.bms.prob.Standalone"
-    buildDir = new File(rootProject.projectDir, "standalone/build")
+task npmDeps(type: Exec) {
+    commandLine "npm", 'install', '-g', 'node-webkit-builder'
+}
 
-    task prepare << {
-        def standalone = new File('standalone')
-        if (!standalone.exists()) standalone.mkdirs()
+targets.each() { target ->
+    task "buildClient_${target}"(dependsOn: [downloadClientData, npmDeps], type: Exec) {
+        commandLine "nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', target, 'build/resources/client'
     }
+}
 
-    task npmDeps(dependsOn: [prepare], type: Exec) {
-        commandLine "npm", 'install', '-g', 'node-webkit-builder'
+task prepareDist << {
+    def libDir = new File('build/libs/libs')
+    libDir.mkdirs()
+    copy {
+        from configurations.compile
+        into libDir
     }
+}
 
-    targets.each() { target ->
-        task "buildClient_${target}"(dependsOn: [downloadClientData, npmDeps], type: Exec) {
-            commandLine "nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', target, 'build/resources/client'
+serverTargetMapping.each() { k, v ->
+    task "zip_${k}"(dependsOn: ["downloadCli_${k}", jar, prepareDist], type: Zip) {
+        destinationDir = new File('build/distribution/' + bmotionVersion)
+        archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
+        from('build/libs') {
+            into "./libs"
+        }
+        from('build/cli/' + v + '_cli') {
+            into "./"
+        }
+        from('build/client/bmotion-prob/' + k) {
+            into "./"
         }
     }
+}
 
-    serverTargetMapping.each() { k, v ->
-        task "zip_${k}"(dependsOn: ["downloadCli_${k}", installApp], type: Zip) {
-            destinationDir = new File('standalone/build/distribution/' + bmotionVersion)
-            archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
-            from('build/install/standalone') {
-                into "server"
-            }
-            from('build/cli/' + v + '_cli') {
-                into "server"
-            }
-            from('build/client/bmotion-prob/' + k) {
-                into "client"
-            }
-        }
-    }
+serverTargetMapping.each() { k, v ->
+    task "standalone_${k}"(dependsOn: ["buildClient_${k}", "zip_${k}"]) {}
+}
 
-    task standaloneDist(dependsOn: [tasks.withType(Exec).matching { task -> task.name.startsWith('buildClient_') }, tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
-    }
-
-    // Very ugly ... Someone knows a better way???
-    startScripts {
-        doLast {
-            unixScript.text = unixScript.text.
-                    replace('exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" ' + mainClassName + ' "$@"',
-                            'exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" -Dprob.home=${APP_HOME}/cli/ ' + mainClassName + ' -standalone -local "$@"')
-            windowsScript.text = windowsScript.text.replace(
-                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %BMOTION_PROB_OPTS%  -classpath "%CLASSPATH%" ' + mainClassName + ' %CMD_LINE_ARGS%',
-                    '"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %B_MOTION_STUDIO_OPTS%  -classpath "%CLASSPATH%" -Dprob.home=%APP_HOME%/cli/ ' + mainClassName + ' -standalone -local')
-        }
-    }
-
+task standalone_all(dependsOn: [tasks.withType(Exec).matching { task -> task.name.startsWith('buildClient_') }, tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
 }
 
