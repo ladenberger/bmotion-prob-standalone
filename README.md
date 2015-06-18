@@ -1,6 +1,6 @@
 # BMotion Studio for ProB Standalone
 
-## Building BMotion Studio for ProB Standalone
+## Build
 
 Run the following command for building the standalone version of BMotion Studio for ProB, where xxx is the target platform:
 
