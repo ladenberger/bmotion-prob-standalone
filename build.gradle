@@ -99,63 +99,58 @@ clean {
     delete("build")
 }
 
-serverTargetMapping.each() { k, v ->
-    task "downloadCli_${k}" << {
-        download_cli(v, probVersion)
-        download_cspm(v)
-    }
-}
-
 task copyClientData(type: Copy) {
     from 'resources/standalone'
     into 'build/resources/client'
 }
 
-task downloadClientData(dependsOn: copyClientData) << {
+task getClientData(dependsOn: copyClientData) << {
     downloadClientData()
 }
-
-// ----------------------------------------
-// Build full distribution for all platforms (client and server)
-// ----------------------------------------
 
 task npmDeps(type: Exec) {
     commandLine "npm", 'install', '-g', 'node-webkit-builder'
 }
 
-targets.each() { target ->
-    task "buildClient_${target}"(dependsOn: [downloadClientData, npmDeps], type: Exec) {
-        commandLine "nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', target, 'build/resources/client'
-    }
-}
-
-task prepareDist << {
-    def libDir = new File('build/libs/libs')
-    libDir.mkdirs()
+task getLibs(dependsOn: jar) << {
     copy {
         from configurations.compile
-        into libDir
+        into 'build/resources/client/libs/libs'
+    }
+    copy {
+        from 'build/libs/bmotion-prob-standalone.jar'
+        into 'build/resources/client/libs'
     }
 }
 
 serverTargetMapping.each() { k, v ->
-    task "zip_${k}"(dependsOn: ["downloadCli_${k}", jar, prepareDist], type: Zip) {
+
+    task "downloadCli_${k}" << {
+        download_cli(v, probVersion)
+        download_cspm(v)
+    }
+
+    task "buildClient_${k}"(dependsOn: [npmDeps, getLibs, "getCli_${k}", getClientData], type: Exec) {
+        commandLine "nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', k, 'build/resources/client'
+    }
+
+    task "getCli_${k}"(dependsOn: "downloadCli_${k}") << {
+        copy {
+            from 'build/cli/' + k + '_cli'
+            into 'build/resources/client'
+        }
+    }
+
+    task "zip_${k}"(dependsOn: [], type: Zip) {
         destinationDir = new File('build/distribution/' + bmotionVersion)
         archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
-        from('build/libs') {
-            into "./bmotion-prob-" + bmotionVersion + "/libs"
-        }
-        from('build/cli/' + v + '_cli') {
-            into "./bmotion-prob-" + bmotionVersion
-        }
         from('build/client/bmotion-prob/' + k) {
             into "./bmotion-prob-" + bmotionVersion
         }
     }
-}
 
-serverTargetMapping.each() { k, v ->
     task "standalone_${k}"(dependsOn: ["buildClient_${k}", "zip_${k}"]) {}
+
 }
 
 task standalone_all(dependsOn: [tasks.withType(Exec).matching { task -> task.name.startsWith('buildClient_') }, tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
