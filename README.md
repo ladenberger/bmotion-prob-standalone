@@ -1,5 +1,7 @@
 # BMotion Studio for ProB Standalone
 
+[![Build Status](https://travis-ci.org/ladenberger/bmotion-prob-standalone.svg)](https://travis-ci.org/ladenberger/bmotion-prob-standalone)
+
 ## Build
 
 Run the following command for building the standalone version of BMotion Studio for ProB, where xxx is the target platform:
