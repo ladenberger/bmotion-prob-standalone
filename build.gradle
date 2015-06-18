@@ -143,13 +143,13 @@ serverTargetMapping.each() { k, v ->
         destinationDir = new File('build/distribution/' + bmotionVersion)
         archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
         from('build/libs') {
-            into "./libs"
+            into "./bmotion-prob-" + bmotionVersion + "/libs"
         }
         from('build/cli/' + v + '_cli') {
-            into "./"
+            into "./bmotion-prob-" + bmotionVersion
         }
         from('build/client/bmotion-prob/' + k) {
-            into "./"
+            into "./bmotion-prob-" + bmotionVersion
         }
     }
 }
