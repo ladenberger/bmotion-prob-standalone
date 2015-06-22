@@ -1,8 +1,7 @@
 def bmotionVersion = '0.2.0-SNAPSHOT'
 def probVersion = 'milestone-25'
 
-def targets = ["linux32", "linux64", "osx64", "win32"]
-def serverTargetMapping = ["linux32": "linux32", "linux64": "linux64", "osx64": "leopard64", "win32": "win32"]
+def targets = ["linux32": "linux32", "linux64": "linux64", "osx64": "leopard64", "win32": "win32"]
 
 def download(String address, String target) {
     def file = new FileOutputStream(target)
@@ -14,17 +13,19 @@ def download(String address, String target) {
 // ----------------------------------------
 // Helper methods ...
 // ----------------------------------------
-def downloadClientData() {
-    println "Downloading Standalone client data..."
-    // Prepare folders ...
-    def cssDir = new File('build/resources/client/css')
-    def jsDir = new File('build/resources/client/js')
-    if (!cssDir.exists()) cssDir.mkdirs()
-    if (!jsDir.exists()) jsDir.mkdirs()
-    // Download current data
+def download_client_data() {
+    println "Downloading standalone client data..."
     def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/bmotion/bmotion-prob-frontend"
-    download(url + '/js/bmotion.standalone.js', 'build/resources/client/js/bmotion.standalone.js')
-    download(url + '/css/bmotion.min.css', 'build/resources/client/css/bmotion.min.css')
+    def String tmp = 'build'
+    def String dir = 'build/resources/client'
+    download(url + '/standalone.zip', tmp + '/standalone.zip')
+    FileTree zip = zipTree(tmp + '/standalone.zip')
+    println "Unzipping " + zip
+    copy {
+        from zip
+        into dir
+    }
+    delete file(tmp + '/standalone.zip')
     println " done."
 }
 
@@ -105,7 +106,7 @@ task copyClientData(type: Copy) {
 }
 
 task getClientData(dependsOn: copyClientData) << {
-    downloadClientData()
+    download_client_data()
 }
 
 task npmDeps(type: Exec) {
@@ -123,7 +124,7 @@ task getLibs(dependsOn: jar) << {
     }
 }
 
-serverTargetMapping.each() { k, v ->
+targets.each() { k, v ->
 
     task "downloadCli_${k}" << {
         download_cli(v, probVersion)
@@ -153,6 +154,7 @@ serverTargetMapping.each() { k, v ->
 
 }
 
-task standalone_all(dependsOn: [tasks.withType(Exec).matching { task -> task.name.startsWith('buildClient_') }, tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
+task standalone_all(dependsOn: [tasks.withType(Exec).matching { task -> task.name.startsWith('buildClient_') },
+                                tasks.withType(Zip).matching { task -> task.name.startsWith('zip_') }]) << {
 }
 
