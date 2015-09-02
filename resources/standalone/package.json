@@ -1,9 +1,10 @@
 {
   "version": "0.2.0",
   "name": "bmotion-prob",
-  "main": "index.html#/loading",
+  "main": "index.html#/startServer",
   "single-instance": false,
   "window": {
+    "title": "BMotion Studio for ProB",
     "icon": "bmsicon.png",
     "toolbar": false,
     "width": 1200,
