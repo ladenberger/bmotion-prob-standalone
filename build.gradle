@@ -1,4 +1,4 @@
-def bmotionVersion = '0.2.0-SNAPSHOT'
+def bmotionVersion = '0.2.1'
 def probVersion = 'milestone-25'
 
 def targets = ["linux32": "linux32", "linux64": "linux64", "osx64": "leopard64", "win32": "win32"]
