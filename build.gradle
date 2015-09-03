@@ -72,6 +72,11 @@ apply plugin: 'maven'
 sourceCompatibility = 1.6
 
 repositories {
+    mavenCentral()
+    maven {
+        name "sonatype snapshots"
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
     maven {
         name "cobra"
         url "http://cobra.cs.uni-duesseldorf.de/artifactory/repo"
@@ -83,7 +88,7 @@ sourceSets.main.java.srcDir 'src/main/java' // ie include the 'java' dir as groo
 configurations.all { resolutionStrategy.cacheChangingModulesFor 0, 'seconds' }
 
 dependencies {
-    compile group: 'de.bmotion', name: 'bmotion-prob', version: bmotionVersion, changing: true
+    compile group: 'de.hhu.stups', name: 'bmotion-prob', version: bmotionVersion, changing: true
 }
 
 jar {
