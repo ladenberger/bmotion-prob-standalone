@@ -1,5 +1,5 @@
-def bmotionVersion = '0.2.1'
-def probVersion = 'milestone-25'
+def bmotionVersion = '0.2.2-SNAPSHOT'
+//def probVersion = 'milestone-25'
 
 def targets = ["linux32": "linux32", "linux64": "linux64", "osx64": "leopard64", "win32": "win32"]
 
@@ -29,7 +29,7 @@ def download_client_data() {
     println " done."
 }
 
-def download_cspm(String target) {
+/*def download_cspm(String target) {
     def String downloadFile = target
     def String postfix = ""
     if (target == "win32") {
@@ -38,7 +38,7 @@ def download_cspm(String target) {
     }
     def String url = "http://nightly.cobra.cs.uni-duesseldorf.de/cspmf/cspmf-" + downloadFile
     println "Downloading cspm for " + target + " ..."
-    def String dir = "build/cli/" + target + "_cli/cli/lib/cspmf" + postfix
+    def String dir = "build/resources/cli/" + target + "_cli/cli/lib/cspmf" + postfix
     download(url, dir)
     new File(dir).setExecutable(true)
     println " done."
@@ -46,7 +46,7 @@ def download_cspm(String target) {
 
 def download_cli(target, probVersion) {
     def downloadFile = target
-    def String dir = "build/cli/" + target + "_cli/cli"
+    def String dir = "build/resources/cli/" + target + "_cli/cli"
     def d = new File(dir)
     delete file(d)
     d.mkdirs();
@@ -63,7 +63,7 @@ def download_cli(target, probVersion) {
         into dir
     }
     delete file(targetzip)
-}
+}*/
 
 
 apply plugin: 'java'
@@ -101,7 +101,6 @@ jar {
 
 // Extend clean task ...
 clean {
-    delete("cli")
     delete("build")
 }
 
@@ -131,28 +130,33 @@ task getLibs(dependsOn: jar) << {
 
 targets.each() { k, v ->
 
-    task "downloadCli_${k}" << {
+    /*task "downloadCli_${k}" << {
         download_cli(v, probVersion)
         download_cspm(v)
-    }
+    }*/
 
-    task "buildClient_${k}"(dependsOn: [npmDeps, getLibs, "getCli_${k}", getClientData], type: Exec) {
+    //task "buildClient_${k}"(dependsOn: [npmDeps, getLibs, "getCli_${k}", getClientData], type: Exec) {
+    task "buildClient_${k}"(dependsOn: [npmDeps, getLibs, getClientData], type: Exec) {
         commandLine "nwbuild", '-v', '0.12.1', '-o', 'build/client', '-p', k, 'build/resources/client'
     }
 
-    task "getCli_${k}"(dependsOn: "downloadCli_${k}") << {
+    /*task "getCli_${k}"(dependsOn: "downloadCli_${k}") << {
         copy {
-            from 'build/cli/' + k + '_cli'
+            from 'build/resources/cli/' + k + '_cli'
             into 'build/resources/client'
         }
-    }
+    }*/
 
+    //task "zip_${k}"(dependsOn: ["downloadCli_${k}"], type: Zip) {
     task "zip_${k}"(dependsOn: [], type: Zip) {
         destinationDir = new File('build/distribution/' + bmotionVersion)
         archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
         from('build/client/bmotion-prob/' + k) {
             into "./bmotion-prob-" + bmotionVersion
         }
+        /*from('build/resources/cli/' + k + '_cli') {
+            into "./bmotion-prob-" + bmotionVersion
+        }*/
     }
 
     task "standalone_${k}"(dependsOn: ["buildClient_${k}", "zip_${k}"]) {}
