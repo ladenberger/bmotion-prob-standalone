@@ -1,6 +1,4 @@
-def bmotionVersion = '0.2.8'
-
-def targets = ["linux32", "linux64", "osx64", "win32"]
+def bmotionVersion = '0.3.0'
 
 apply plugin: 'java'
 apply plugin: 'application'
@@ -27,23 +25,16 @@ dependencies {
     compile group: 'de.hhu.stups', name: 'bmotion-prob', version: bmotionVersion, changing: true
 }
 
-// Extend clean task ...
 clean {
     delete("build")
 }
 
-targets.each() { k ->
-
-    task "zip_${k}"(dependsOn: [installApp], type: Zip) {
-        destinationDir = new File('build/distribution/' + bmotionVersion)
-        archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '-' + k + '.zip'
-        from('build/install/bmotion-prob-standalone/') {
-            into "./bmotion-prob-" + bmotionVersion
-        }
+task zip(dependsOn: [installApp], type: Zip) {
+    destinationDir = new File('build/distribution/' + bmotionVersion)
+    archiveName = 'bmotion-prob-standalone-' + bmotionVersion + '.zip'
+    from('build/install/bmotion-prob-standalone/') {
+        into "./bmotion-prob-" + bmotionVersion
     }
-
-    task "standalone_${k}"(dependsOn: ["zip_${k}"]) {}
-
 }
 
-
+task standalone(dependsOn: [clean, zip]) {}
