@@ -1,4 +1,4 @@
 build
-.grade
-bmotion-prob-standalone.iml
+cache
+.gradle
 .directory
